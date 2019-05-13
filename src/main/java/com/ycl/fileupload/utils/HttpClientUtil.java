@@ -8,14 +8,16 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
@@ -72,7 +74,7 @@ public class HttpClientUtil {
         return msg;
     }
 
-    public String post1(String url, Map<String,Object> param) {
+    public String post1(String url, Map<String, Object> param) {
         HttpPost post = new HttpPost(url);
         post.addHeader("contentType", "application/x-www-form-urlencoded");
         post.setEntity(new StringEntity(param.toString(), "utf-8"));
@@ -84,7 +86,31 @@ public class HttpClientUtil {
         } catch (IOException e) {
             log.info("Http Post Method Exception:" + e);
         }
-        log.info("result={}",msg);
+        log.info("result={}", msg);
         return msg;
+    }
+
+    public String post3(String url, MultipartFile file, String fileBizType, String uploadedBy) {
+        String result = "";
+        try {
+            String fileName = file.getOriginalFilename();
+            HttpPost httpPost = new HttpPost(url);
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.addBinaryBody("file", file.getInputStream(), ContentType.MULTIPART_FORM_DATA, fileName);
+            builder.addTextBody("fileBizType", fileBizType);
+            builder.addTextBody("uploadedBy", uploadedBy);
+            HttpEntity entity = builder.build();
+            httpPost.setEntity(entity);
+            HttpResponse response = httpClient.execute(httpPost);
+            HttpEntity responseEntity = response.getEntity();
+            if (responseEntity != null) {
+                result = EntityUtils.toString(responseEntity, Charset.forName("UTF-8"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+
+        }
+        return result;
     }
 }
